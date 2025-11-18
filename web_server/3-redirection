@@ -1,16 +1,8 @@
 #!/usr/bin/env bash
-# Configure Nginx 301 redirect for /redirect_me
-
-# Path to Nginx config
 NGINX_CONFIG="/etc/nginx/sites-available/default"
 
-# Add location block after server_name line (avoid duplicates)
 if ! grep -q "location /redirect_me" "$NGINX_CONFIG"; then
-    sudo sed -i '/server_name _;$/a \
-    location /redirect_me {\
-        return 301 https://www.youtube.com/watch?v=QH2-TGUlwu4;\
-    }' "$NGINX_CONFIG"
+    sudo sed -i 's|\(server_name _;\)|\1\n    location /redirect_me {\n        return 301 https://www.youtube.com/watch?v=QH2-TGUlwu4;\n    }|' "$NGINX_CONFIG"
 fi
 
-# Test and reload
 sudo nginx -t && sudo systemctl reload nginx
