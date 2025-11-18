@@ -1,28 +1,8 @@
 #!/usr/bin/env bash
 # Configure Nginx 301 redirect for /redirect_me
 
-NGINX_CONFIG="/etc/nginx/sites-available/default"
-
-# Use awk instead of sed - more reliable for multi-line insertion
-if ! grep -q "location /redirect_me" "$NGINX_CONFIG"; then
-    sudo awk '/server_name[[:space:]]+_;/ && !done {
-        print
-        print "    location /redirect_me {"
-        print "        return 301 https://www.youtube.com/watch?v=QH2-TGUlwu4;"
-        print "    }"
-        done=1
-        next
-    }1' "$NGINX_CONFIG" > /tmp/nginx.tmp && sudo mv /tmp/nginx.tmp "$NGINX_CONFIG"
-fi
-
-# Test configuration
-if ! sudo nginx -t; then
-    echo "Nginx config test failed" >&2
-    exit 1
-fi
-
-# Reload nginx
-sudo systemctl reload nginx
-
-# Verify the redirect works (output 301 for checker)
-curl -sI localhost/redirect_me/ | grep -o "301"
+sudo apt-get update
+sudo apt-get -y install nginx
+newlines="\\\trewrite ^/redirect_me https://www.youtube.com/watch?v=QH2-TGUlwu4 permanent;"
+sudo sed -i "53i $newlines" /etc/nginx/sites-available/default
+sudo service nginx restart
