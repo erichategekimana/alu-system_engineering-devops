@@ -1,0 +1,23 @@
+#!/usr/bin/env bash
+# 0-custom_http_response_header: Add X-Served-By header to Nginx
+
+NGINX_CONFIG="/etc/nginx/sites-available/default"
+
+# Install Nginx if missing (for brand-new machines)
+if ! command -v nginx &> /dev/null; then
+    sudo apt-get update
+    sudo apt-get install -y nginx
+fi
+
+# Add header if not already present
+if ! grep -q "X-Served-By" "$NGINX_CONFIG"; then
+    sudo awk '/server_name[[:space:]]+_;/ && !done {
+        print
+        print "    add_header X-Served-By $hostname;"
+        done=1
+        next
+    }1' "$NGINX_CONFIG" > /tmp/nginx.tmp && sudo mv /tmp/nginx.tmp "$NGINX_CONFIG"
+fi
+
+# Test and reload
+sudo nginx -t && sudo systemctl reload nginx
