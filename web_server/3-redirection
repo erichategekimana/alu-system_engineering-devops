@@ -1,4 +1,6 @@
 #!/usr/bin/env bash
+# Configure Nginx 301 redirect for /redirect_me
+
 NGINX_CONFIG="/etc/nginx/sites-available/default"
 
 if ! grep -q "location /redirect_me" "$NGINX_CONFIG"; then
