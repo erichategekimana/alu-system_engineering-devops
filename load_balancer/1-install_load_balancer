@@ -1,0 +1,42 @@
+#!/usr/bin/env bash
+# 1-install_load_balancer: Install HAProxy with round-robin to web-01 and web-02
+
+# Install HAProxy if missing
+if ! command -v haproxy &> /dev/null; then
+    sudo apt-get update
+    sudo apt-get install -y haproxy
+fi
+
+# Enable HAProxy service
+echo 'ENABLED=1' | sudo tee /etc/default/haproxy > /dev/null
+
+# Configure HAProxy
+cat << 'EOF' | sudo tee /etc/haproxy/haproxy.cfg > /dev/null
+global
+    daemon
+    maxconn 256
+
+defaults
+    mode http
+    timeout connect 5000ms
+    timeout client 50000ms
+    timeout server 50000ms
+
+frontend http-in
+    bind *:80
+    default_backend webservers
+
+backend webservers
+    balance roundrobin
+    server web-01 98.94.26.92:80 check
+    server web-02 54.89.38.100:80 check
+EOF
+
+# Replace with YOUR actual web server IPs
+# Get them with: curl ifconfig.me on each web server
+
+# Restart HAProxy
+sudo systemctl enable haproxy
+sudo systemctl restart haproxy
+
+echo "Load balancer configured successfully"
