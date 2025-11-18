@@ -24,3 +24,4 @@ fi
 
 # Test and reload
 sudo nginx -t && sudo systemctl reload nginx
+echo "Ceci n'est pas une page"
