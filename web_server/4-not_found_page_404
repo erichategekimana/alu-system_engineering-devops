@@ -2,26 +2,31 @@
 # 4-not_found_page_404: Configure custom 404 error page
 
 # Create 404 page if it doesn't exist
-if [ ! -f /var/www/html/404.html ]; then
-    echo "Ceci n'est pas une page" | sudo tee /var/www/html/404.html > /dev/null
-fi
+apt-get update
+apt-get install -y nginx
 
-# Configure Nginx
-NGINX_CONFIG="/etc/nginx/sites-available/default"
+mkdir -p /var/www/html
+echo "Holberton School for the win!" > /var/www/html/index.html
+echo "Ceci n'est pas une page" > /var/www/html/404.html
 
-# Add error_page directive if not present
-if ! grep -q "error_page 404 /404.html;" "$NGINX_CONFIG"; then
-    sudo awk '/server_name[[:space:]]+_;/ && !done {
-        print
-        print "    error_page 404 /404.html;"
-        print "    location = /404.html {"
-        print "        internal;"
-        print "    }"
-        done=1
-        next
-    }1' "$NGINX_CONFIG" > /tmp/nginx.tmp && sudo mv /tmp/nginx.tmp "$NGINX_CONFIG"
-fi
+printf %s "server {
+    listen 80 default_server;
+    listen [::]:80 default_server;
+    root /var/www/html;
+    index index.html index.htm;
+    server_name _;
+    location / {
+        try_files \$uri \$uri/ =404;
+    }
+    location /redirect_me {
+        return 301 https://www.youtube.com/watch?v=QH2-TGUlwu4;
+    }
+    error_page 404 /404.html;
+    location = /404.html {
+        root /var/www/html;
+        internal;
+    }
+}
+" > /etc/nginx/sites-available/default
 
-# Test and reload
-sudo nginx -t && sudo systemctl reload nginx
-echo "Ceci n'est pas une page"
+service nginx restart
