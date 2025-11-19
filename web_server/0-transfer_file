@@ -1,10 +1,57 @@
 #!/usr/bin/env bash
-# Transfers a file from our client to a server
+# 0-world_wide_web: DNS subdomain auditor
 
-if [ "$4" == "" ]
-then 
-    echo "Usage: 0-transfer_file PATH_TO_FILE IP USERNAME PATH_TO_SSH_KEY"
-else
-    host="$3@$2:~/"
-    scp -o StrictHostKeyChecking=no -i $4 $1 $host
-fi
+# Function to get DNS info for a subdomain
+get_dns_info() {
+    local domain="$1"
+    local subdomain="$2"
+    local full_domain="${subdomain}.${domain}"
+    
+    # Query DNS for A record
+    dig_output=$(dig "$full_domain" A +noall +answer)
+    
+    # If no record found
+    if [[ -z "$dig_output" ]]; then
+        echo "The subdomain $subdomain does not exist" >&2
+        return 1
+    fi
+    
+    # Parse dig output with awk
+    # Format: subdomain.domain.com. TTL IN A IP_ADDRESS
+    echo "$dig_output" | awk -v sub="$subdomain" '
+    NF >= 5 && $4 == "A" {
+        print "The subdomain " sub " is a " $4 " record and points to " $5
+        exit 0
+    }
+    {
+        print "Error: Could not parse DNS record" >&2
+        exit 1
+    }
+    '
+}
+
+# Main function
+main() {
+    local domain="$1"
+    local subdomain="$2"
+    local subdomains=("www" "lb-01" "web-01" "web-02")
+    
+    # Validate domain argument
+    if [[ -z "$domain" ]]; then
+        echo "Error: domain parameter is required" >&2
+        exit 1
+    fi
+    
+    # Single subdomain mode
+    if [[ -n "$subdomain" ]]; then
+        get_dns_info "$domain" "$subdomain"
+    else
+        # Bulk audit mode
+        for sub in "${subdomains[@]}"; do
+            get_dns_info "$domain" "$sub"
+        done
+    fi
+}
+
+# Execute main with all arguments
+main "$@"
